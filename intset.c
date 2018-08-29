@@ -165,17 +165,6 @@ intset_eq(PG_FUNCTION_ARGS)
     PG_RETURN_BOOL(intset_sub_internal(a, b) && intset_sub_internal(b, a));
 }
 
-PG_FUNCTION_INFO_V1(intset_eq);
-
-Datum
-intset_eq(PG_FUNCTION_ARGS)
-{
-    Intset *a = (Intset *) PG_GETARG_POINTER(0);
-    Intset *b = (Intset *) PG_GETARG_POINTER(1);
-    
-    PG_RETURN_BOOL(intset_sub_internal(a, b) && intset_sub_internal(b, a));
-}
-
 PG_FUNCTION_INFO_V1(intset_int);
 
 Datum
