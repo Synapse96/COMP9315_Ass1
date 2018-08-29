@@ -172,8 +172,25 @@ intset_int(PG_FUNCTION_ARGS)
 {
     Intset *a = (Intset *) PG_GETARG_POINTER(0);
     Intset *b = (Intset *) PG_GETARG_POINTER(1);
+    Intset *newset;
+    int *a_arr;
+    int a_len = VARSIZE(a);
+    int b_len = VARSIZE(b);
+    memcpy(a_arr, a->data, a_len - VARHDRSZ);
     
+    max_size = (a_len <= b_len) ? a_len : b_len;
+    int temp = malloc(max_size * sizeof(int));
+    int step = 0;
+    for (int i = 0; i < a_len; i++) {
+        if (intset_con_internal(a_arr[i], b)) {
+            temp[step] = a_arr[i];
+            step = step + 1;
+        }
+    }
     
+    newset = (Intset *) palloc(sizeof(Intset));
+    memcpy(newset->data, temp, max_size);
+    PG_RETURN_POINTER(newset);
 }
 
 PG_FUNCTION_INFO_V1(intset_uni);
@@ -183,8 +200,10 @@ intset_uni(PG_FUNCTION_ARGS)
 {
     Intset *a = (Intset *) PG_GETARG_POINTER(0);
     Intset *b = (Intset *) PG_GETARG_POINTER(1);
+    Intset *newset;
     
-    
+    newset = (Intset *) palloc(sizeof(Intset));
+    PG_RETURN_POINTER(newset);
 }
 
 PG_FUNCTION_INFO_V1(intset_dis);
@@ -194,8 +213,10 @@ intset_dis(PG_FUNCTION_ARGS)
 {
     Intset *a = (Intset *) PG_GETARG_POINTER(0);
     Intset *b = (Intset *) PG_GETARG_POINTER(1);
+    Intset *newset;
     
-    
+    newset = (Intset *) palloc(sizeof(Intset));
+    PG_RETURN_POINTER(newset);
 }
 
 PG_FUNCTION_INFO_V1(intset_dif);
@@ -205,6 +226,8 @@ intset_dif(PG_FUNCTION_ARGS)
 {
     Intset *a = (Intset *) PG_GETARG_POINTER(0);
     Intset *b = (Intset *) PG_GETARG_POINTER(1);
+    Intset *newset;
     
-    
+    newset = (Intset *) palloc(sizeof(Intset));
+    PG_RETURN_POINTER(newset);
 }
