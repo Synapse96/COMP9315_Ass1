@@ -84,3 +84,138 @@ intset_out(PG_FUNCTION_ARGS)
 	result = psprintf("(%g,%g)", complex->x, complex->y);
 	PG_RETURN_CSTRING(result);
 }
+
+/*****************************************************************************
+ * Operators
+ *****************************************************************************/
+
+static bool
+intset_con_internal(int i, Intset * a)
+{
+    int *arr;
+    int len = VARSIZE(a);
+    memcpy(arr, a->data, len - VARHDRSZ);
+    
+    for (j = 0; j < len; j++) {
+        if (arr[j] == i) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool
+intset_sub_internal(Intset * a, Intset * b)
+{
+    int *arr;
+    int len = VARSIZE(a);
+    memcpy(arr, a->data, len - VARHDRSZ);
+    
+    for (i = 0; i < len; i++) {
+        if (!(intset_con_internal(arr[i], b))) {
+            return false;
+        } else {
+            continue;
+        }
+    }
+    return true;
+}
+
+PG_FUNCTION_INFO_V1(intset_con);
+
+Datum
+intset_con(PG_FUNCTION_ARGS)
+{
+    int *i = (int *) PG_GETARG_POINTER(0);
+    Intset *a = (Intset *) PG_GETARG_POINTER(1);
+    
+    PG_RETURN_BOOL(intset_con_internal(*i, a));
+}
+
+PG_FUNCTION_INFO_V1(intset_cdn);
+
+Datum
+intset_cdn(PG_FUNCTION_ARGS)
+{
+    Intset *a = (Intset *) PG_GETARG_POINTER(0);
+    int len = VARSIZE(a);
+    
+    PG_RETURN_INT32(len);
+}
+
+PG_FUNCTION_INFO_V1(intset_sub);
+
+Datum
+intset_sub(PG_FUNCTION_ARGS)
+{
+    Intset *a = (Intset *) PG_GETARG_POINTER(0);
+    Intset *b = (Intset *) PG_GETARG_POINTER(1);
+    
+    PG_RETURN_BOOL(intset_sub_internal(a, b));
+}
+
+PG_FUNCTION_INFO_V1(intset_eq);
+
+Datum
+intset_eq(PG_FUNCTION_ARGS)
+{
+    Intset *a = (Intset *) PG_GETARG_POINTER(0);
+    Intset *b = (Intset *) PG_GETARG_POINTER(1);
+    
+    PG_RETURN_BOOL(intset_sub_internal(a, b) && intset_sub_internal(b, a));
+}
+
+PG_FUNCTION_INFO_V1(intset_eq);
+
+Datum
+intset_eq(PG_FUNCTION_ARGS)
+{
+    Intset *a = (Intset *) PG_GETARG_POINTER(0);
+    Intset *b = (Intset *) PG_GETARG_POINTER(1);
+    
+    PG_RETURN_BOOL(intset_sub_internal(a, b) && intset_sub_internal(b, a));
+}
+
+PG_FUNCTION_INFO_V1(intset_int);
+
+Datum
+intset_int(PG_FUNCTION_ARGS)
+{
+    Intset *a = (Intset *) PG_GETARG_POINTER(0);
+    Intset *b = (Intset *) PG_GETARG_POINTER(1);
+    
+    
+}
+
+PG_FUNCTION_INFO_V1(intset_uni);
+
+Datum
+intset_uni(PG_FUNCTION_ARGS)
+{
+    Intset *a = (Intset *) PG_GETARG_POINTER(0);
+    Intset *b = (Intset *) PG_GETARG_POINTER(1);
+    
+    
+}
+
+PG_FUNCTION_INFO_V1(intset_dis);
+
+Datum
+intset_dis(PG_FUNCTION_ARGS)
+{
+    Intset *a = (Intset *) PG_GETARG_POINTER(0);
+    Intset *b = (Intset *) PG_GETARG_POINTER(1);
+    
+    
+}
+
+PG_FUNCTION_INFO_V1(intset_dif);
+
+Datum
+intset_dif(PG_FUNCTION_ARGS)
+{
+    Intset *a = (Intset *) PG_GETARG_POINTER(0);
+    Intset *b = (Intset *) PG_GETARG_POINTER(1);
+    
+    
+}
