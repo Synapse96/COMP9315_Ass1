@@ -205,15 +205,15 @@ intset_int(PG_FUNCTION_ARGS)
     
     int a_len = VARSIZE_ANY_EXHDR(a) / 4;
     int b_len = VARSIZE_ANY_EXHDR(b) / 4;
-    int a_arr[a_len];
-    memcpy(a_arr, a->data, VARSIZE_ANY_EXHDR(a));
+    int arr[a_len];
+    memcpy(arr, a->data, VARSIZE_ANY_EXHDR(a));
     
     max_size = (a_len <= b_len) ? a_len : b_len;
-    int temp = malloc(max_size * sizeof(int));
+    int temp[max_size];
     int step = 0;
     for (int i = 0; i < a_len; i++) {
-        if (intset_con_internal(a_arr[i], b)) {
-            temp[step] = a_arr[i];
+        if (intset_con_internal(arr[i], b)) {
+            temp[step] = arr[i];
             step = step + 1;
         }
     }
@@ -239,8 +239,9 @@ intset_uni(PG_FUNCTION_ARGS)
     int b_arr[b_len];
     memcpy(a_arr, a->data, VARSIZE_ANY_EXHDR(a));
     memcpy(b_arr, b->data, VARSIZE_ANY_EXHDR(b));
+    
     max_size = a_len + b_len;
-    int temp = malloc(max_size * sizeof(int));
+    int temp[max_size];
     int step = 0;
     for (int i = 0; i < a_len; i++) {
         temp[step] = a_arr[i];
@@ -274,7 +275,7 @@ intset_dis(PG_FUNCTION_ARGS)
     memcpy(b_arr, b->data, VARSIZE_ANY_EXHDR(b));
     
     max_size = a_len + b_len;
-    int temp = malloc(max_size * sizeof(int));
+    int temp[max_size];
     int step = 0;
     for (int i = 0; i < a_len; i++) {
         if (!(intset_con_internal(a_arr[i], b))) {
@@ -306,15 +307,15 @@ intset_dif(PG_FUNCTION_ARGS)
     
     int a_len = VARSIZE_ANY_EXHDR(a) / 4;
     int b_len = VARSIZE_ANY_EXHDR(b) / 4;
-    int a_arr[a_len];
-    memcpy(a_arr, a->data, VARSIZE_ANY_EXHDR(a));
+    int arr[a_len];
+    memcpy(arr, a->data, VARSIZE_ANY_EXHDR(a));
     
     max_size = a_len;
-    int temp = malloc(max_size * sizeof(int));
+    int temp[max_size];
     int step = 0;
     for (int i = 0; i < a_len; i++) {
-        if (!(intset_con_internal(a_arr[i], b))) {
-            temp[step] = a_arr[i];
+        if (!(intset_con_internal(arr[i], b))) {
+            temp[step] = arr[i];
             step = step + 1;
         }
     }
