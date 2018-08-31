@@ -10,17 +10,73 @@ typedef struct Intset
 	int cdn; //cardinality?
 } Intset;
 
+Intset *parse_set(char *str);
+
+/*****************************************************************************
+ * Input/Output functions
+ *****************************************************************************/
+
+PG_FUNCTION_INFO_V1(intset_in);
+
+Datum
+intset_in(PG_FUNCTION_ARGS)
+{
+    char *str = PG_GETARG_CSTRING(0);
+    Intset *result = parse_set(str);
+    if (result == NULL)
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+                 errmsg("invalid input syntax for int set: \"%s\"",
+                        str)));
+    PG_RETURN_POINTER(result);
+}
+
+PG_FUNCTION_INFO_V1(intset_out);
+
+Datum
+intset_out(PG_FUNCTION_ARGS)
+{
+    Intset *s = (Intset *) PG_GETARG_VARLENA_P(0);
+    int len = VARSIZE_ANY_EXHDR(s) / 4;
+  if (len == 0) {
+    PG_RETURN_CSTRING("{}");
+  }
+
+    int arr[len];   
+  int i;
+    memcpy(arr,s->data,VARSIZE_ANY_EXHDR(s));
+  char *result =  (char *)palloc(VARSIZE(s));
+
+  if (len == 1) {
+    sprintf(result,"{%d}",arr[0]);
+    PG_RETURN_CSTRING(result);
+  } else {
+    sprintf(result,"{%d,",arr[0]);
+  }
+  char *temp =  (char *)palloc(40);
+  for(i = 1; i < len - 1; i++) {
+    sprintf(temp,"%d,",arr[i]);
+    strcat(result,temp);
+  }
+  sprintf(temp,"%d}",arr[i]);
+  strcat(result,temp);
+    PG_RETURN_CSTRING(result);
+}
+
+
 Intset *parse_set(char *str) {
-  int *arr = (int*)malloc(strlen(str)*sizeof(int));
+  int arr[strlen(str)];
+  Intset *s;
   int j = 0, temp = 0, isNeg = 0;
   int numFound = 0;
-  for(int i = 1; i < strlen(str); i++) {
+  int i;
+  for(i = 1; i < strlen(str); i++) {
     if (str[i] == ' ') {
       if (numFound == 1) {
         numFound = 2;
       } 
       continue;
-    } else if (str[i] == ',' || str[i] == '}') {
+    } else if (str[i] == ',') {
       if (numFound != 0) {
         numFound = 0;
         arr[j] = temp; 
@@ -43,46 +99,19 @@ Intset *parse_set(char *str) {
       }
     } else if (str[i] == '-') {
       isNeg = 1;
-    } 
+    } else if (str[i] == '}' && i == strlen(str) - 1) {
+      if (numFound != 0) {
+        arr[j] = temp; 
+        j++;
+      }
+    } else {
+      return NULL;
+    }
   }
-  Intset *s = (Intset *)palloc(sizeof(Intset));
-  SET_VARSIZE(s,j);
-  memcpy(s->data,arr,j);
+  s = (Intset *)palloc(j*sizeof(Intset) + 4);
+  SET_VARSIZE(s,(4*j) + VARHDRSZ);
+  memcpy(s->data,arr,4*j);
   return s;
-}
-
-/*****************************************************************************
- * Input/Output functions
- *****************************************************************************/
-
-PG_FUNCTION_INFO_V1(intset_in);
-
-Datum
-intset_in(PG_FUNCTION_ARGS)
-{
-	char *str = PG_GETARG_CSTRING(0);
-	Intset *res = parse_set(str);
-	if (res == NULL)
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				 errmsg("invalid input syntax for int set: \"%s\"",
-						str)));
-	PG_RETURN_POINTER(result);
-}
-
-PG_FUNCTION_INFO_V1(intset_out);
-
-Datum
-intset_out(PG_FUNCTION_ARGS)
-{
-	Intset *s = (Intset *) PG_GETARG_POINTER(0);
-	char	   *result;
-	int len = VARSIZE(s);
-	int *arr; 
-	memcpy(arr,s->data,len - VARHDRSZ)
-	
-	result = psprintf("(%g,%g)", complex->x, complex->y);
-	PG_RETURN_CSTRING(result);
 }
 
 /*****************************************************************************
