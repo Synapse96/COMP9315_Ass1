@@ -1,13 +1,12 @@
-CREATE OR REPLACE FUNCTION intset_in(cstring)
+CREATE FUNCTION intset_in(cstring)
    RETURNS intset
    AS '_OBJWD_/intset'
    LANGUAGE C IMMUTABLE STRICT;
 
-CREATE OR REPLACE FUNCTION intset_out(intset)
+CREATE FUNCTION intset_out(intset)
    RETURNS cstring
    AS '_OBJWD_/intset'
    LANGUAGE C IMMUTABLE STRICT;
-
 
 CREATE TYPE intset (
    internallength = VARIABLE,
@@ -17,54 +16,76 @@ CREATE TYPE intset (
    storage = extended
 );
 
-
 -----------------------------
--- Using the new type:
---  user-defined types can be used like ordinary built-in types.
+-- Operators
 -----------------------------
+CREATE FUNCTION intset_con(integer, intset) RETURNS bool
+   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION intset_cdn(intset) RETURNS integer
+   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION intset_sub(intset, intset) RETURNS bool
+   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION intset_eq(intset, intset) RETURNS bool
+   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION intset_int(intset, intset) RETURNS intset
+   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION intset_uni(intset, intset) RETURNS intset
+   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION intset_dis(intset, intset) RETURNS intset
+   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION intset_dif(intset, intset) RETURNS intset
+   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
 
--- eg. we can use it in a table
-
-CREATE TABLE test_intset (
-  a intset
+CREATE OPERATOR <@ (
+   leftarg    = integer,
+   rightarg   = intset,
+   procedure  = intset_con,
+   commutator = <@
 );
 
--- data for user-defined types are just strings in the proper textual
--- representation.
+CREATE OPERATOR @ (
+   rightarg   = intset,
+   procedure  = intset_cdn
+);
 
-INSERT INTO test_intset VALUES ('{1,2,3,4,5}');
+CREATE OPERATOR @> (
+   leftarg    = intset,
+   rightarg   = intset,
+   procedure  = intset_sub,
+   commutator = @>
+);
 
-SELECT * FROM test_intset;
+CREATE OPERATOR = (
+   leftarg    = intset,
+   rightarg   = intset,
+   procedure  = intset_eq,
+   commutator = =
+);
 
+CREATE OPERATOR && (
+   leftarg    = intset,
+   rightarg   = intset,
+   procedure  = intset_int,
+   commutator = &&
+);
 
---create table Features (
---   id INTEGER primary key,
---   name text
---);
---
---create table DBSystems (
---    name text,
---    features intSet
---);
---
---insert into Features (id, name) values
---    (1, 'well designed'),
---    (2, 'efficient'),
---    (3, 'flexible'),
---    (4, 'robust');
---
---
---insert into DBSystems (name, features) values
---    ('MySQL', '{}'),
---    ('MongoDB', '{}'),
---    ('Oracle', '{2,4}'),
---    ('PostgreSQL', '{1,2,3,4}');
---
---select * from DBSystems;
---select * from Features;
+CREATE OPERATOR || (
+   leftarg    = intset,
+   rightarg   = intset,
+   procedure  = intset_uni,
+   commutator = ||
+);
 
--- clean up the example
- DROP TABLE test_intset;
- --DROP TABLE DBSystems;
- --DROP TABLE Features;
- DROP TYPE intset CASCADE;
+CREATE OPERATOR !! (
+   leftarg    = intset,
+   rightarg   = intset,
+   procedure  = intset_dis,
+   commutator = !!
+);
+
+CREATE OPERATOR - (
+   leftarg    = intset,
+   rightarg   = intset,
+   procedure  = intset_dif,
+   commutator = -
+);

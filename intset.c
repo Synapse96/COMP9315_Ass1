@@ -5,8 +5,8 @@ PG_MODULE_MAGIC;
 
 typedef struct Intset
 {
-	char[4]	v1_len;
-	char[1]	data;
+	char v1_len[4];
+	char data[1];
 	int cdn; //cardinality?
 } Intset;
 
@@ -38,80 +38,78 @@ intset_out(PG_FUNCTION_ARGS)
 {
     Intset *s = (Intset *) PG_GETARG_VARLENA_P(0);
     int len = VARSIZE_ANY_EXHDR(s) / 4;
-  if (len == 0) {
-    PG_RETURN_CSTRING("{}");
-  }
-
-    int arr[len];   
-  int i;
+    if (len == 0) {
+        PG_RETURN_CSTRING("{}");
+    }
+    int arr[len];
+    int i;
     memcpy(arr,s->data,VARSIZE_ANY_EXHDR(s));
-  char *result =  (char *)palloc(VARSIZE(s));
-
-  if (len == 1) {
-    sprintf(result,"{%d}",arr[0]);
-    PG_RETURN_CSTRING(result);
-  } else {
-    sprintf(result,"{%d,",arr[0]);
-  }
-  char *temp =  (char *)palloc(40);
-  for(i = 1; i < len - 1; i++) {
-    sprintf(temp,"%d,",arr[i]);
+    char *result =  (char *)palloc(VARSIZE(s));
+    if (len == 1) {
+        sprintf(result,"{%d}",arr[0]);
+        PG_RETURN_CSTRING(result);
+    } else {
+        sprintf(result,"{%d,",arr[0]);
+    }
+    char *temp =  (char *)palloc(40);
+    for(i = 1; i < len - 1; i++) {
+        sprintf(temp,"%d,",arr[i]);
+        strcat(result,temp);
+    }
+    sprintf(temp,"%d}",arr[i]);
     strcat(result,temp);
-  }
-  sprintf(temp,"%d}",arr[i]);
-  strcat(result,temp);
     PG_RETURN_CSTRING(result);
 }
 
 
 Intset *parse_set(char *str) {
-  int arr[strlen(str)];
-  Intset *s;
-  int j = 0, temp = 0, isNeg = 0;
-  int numFound = 0;
-  int i;
-  for(i = 1; i < strlen(str); i++) {
-    if (str[i] == ' ') {
-      if (numFound == 1) {
-        numFound = 2;
-      } 
-      continue;
-    } else if (str[i] == ',') {
-      if (numFound != 0) {
-        numFound = 0;
-        arr[j] = temp; 
-        temp = 0;
-        isNeg = 0;
-        j++;
-      } else {
-        return NULL;
-      }
-    } else if (str[i] >= '0' && str[i] <= '9') {
-      if (numFound == 0) {
-        numFound = 1;
-      } else if (numFound == 2) {
-        return NULL;
-      }
-      if (!isNeg) {
-        temp = 10*temp + (str[i] - '0');
-      } else {
-        temp = 10*temp - (str[i] - '0');
-      }
-    } else if (str[i] == '-') {
-      isNeg = 1;
-    } else if (str[i] == '}' && i == strlen(str) - 1) {
-      if (numFound != 0) {
-        arr[j] = temp; 
-        j++;
-      }
-    } else {
-      return NULL;
+    int arr[strlen(str)];
+    Intset *s;
+    int j = 0, temp = 0, isNeg = 0;
+    int numFound = 0;
+    int i;
+    for(i = 1; i < strlen(str); i++) {
+        if (str[i] == ' ') {
+            if (numFound == 1) {
+                numFound = 2;
+            } 
+            continue;
+        } else if (str[i] == ',') {
+            if (numFound != 0) {
+                numFound = 0;
+                arr[j] = temp; 
+                temp = 0;
+                isNeg = 0;
+                j++;
+            } else {
+                return NULL;
+            }
+        } else if (str[i] >= '0' && str[i] <= '9') {
+            if (numFound == 0) {
+                numFound = 1;
+            } else if (numFound == 2) {
+                return NULL;
+            }
+            if (!isNeg) {
+                temp = 10*temp + (str[i] - '0');
+            } else {
+                temp = 10*temp - (str[i] - '0');
+            }
+        } else if (str[i] == '-') {
+            isNeg = 1;
+        } else if (str[i] == '}' && i == strlen(str) - 1) {
+            if (numFound != 0) {
+                arr[j] = temp; 
+                j++;
+            }
+        } else {
+            return NULL;
+        }
     }
-  }
-  s = (Intset *)palloc(j*sizeof(Intset) + 4);
-  SET_VARSIZE(s,(4*j) + VARHDRSZ);
-  memcpy(s->data,arr,4*j);
-  return s;
+    s = (Intset *)palloc(j*sizeof(Intset) + 4);
+    SET_VARSIZE(s,(4*j) + VARHDRSZ);
+    memcpy(s->data,arr,4*j);
+    return s;
 }
 
 /*****************************************************************************
@@ -121,10 +119,11 @@ Intset *parse_set(char *str) {
 static bool
 intset_con_internal(int i, Intset * a)
 {
-    int *arr;
     int len = VARSIZE_ANY_EXHDR(a) / 4;
+    int arr[len];
     memcpy(arr, a->data, VARSIZE_ANY_EXHDR(a));
     
+    int j;
     for (j = 0; j < len; j++) {
         if (arr[j] == i) {
             return true;
@@ -136,15 +135,14 @@ intset_con_internal(int i, Intset * a)
 static bool
 intset_sub_internal(Intset * a, Intset * b)
 {
-    int *arr;
     int len = VARSIZE_ANY_EXHDR(a) / 4;
+    int arr[len];
     memcpy(arr, a->data, VARSIZE_ANY_EXHDR(a));
     
+    int i;
     for (i = 0; i < len; i++) {
         if (!(intset_con_internal(arr[i], b))) {
             return false;
-        } else {
-            continue;
         }
     }
     return true;
@@ -208,10 +206,11 @@ intset_int(PG_FUNCTION_ARGS)
     int arr[a_len];
     memcpy(arr, a->data, VARSIZE_ANY_EXHDR(a));
     
-    max_size = (a_len <= b_len) ? a_len : b_len;
+    int max_size = (a_len <= b_len) ? a_len : b_len;
     int temp[max_size];
     int step = 0;
-    for (int i = 0; i < a_len; i++) {
+    int i;
+    for (i = 0; i < a_len; i++) {
         if (intset_con_internal(arr[i], b)) {
             temp[step] = arr[i];
             step = step + 1;
@@ -240,14 +239,15 @@ intset_uni(PG_FUNCTION_ARGS)
     memcpy(a_arr, a->data, VARSIZE_ANY_EXHDR(a));
     memcpy(b_arr, b->data, VARSIZE_ANY_EXHDR(b));
     
-    max_size = a_len + b_len;
+    int max_size = a_len + b_len;
     int temp[max_size];
     int step = 0;
-    for (int i = 0; i < a_len; i++) {
+    int i, j;
+    for (i = 0; i < a_len; i++) {
         temp[step] = a_arr[i];
         step = step + 1;
     }
-    for (int j = 0; j < b_len; j++) {
+    for (j = 0; j < b_len; j++) {
         temp[step] = b_arr[j];
         step = step + 1;
     }
@@ -274,16 +274,17 @@ intset_dis(PG_FUNCTION_ARGS)
     memcpy(a_arr, a->data, VARSIZE_ANY_EXHDR(a));
     memcpy(b_arr, b->data, VARSIZE_ANY_EXHDR(b));
     
-    max_size = a_len + b_len;
+    int max_size = a_len + b_len;
     int temp[max_size];
     int step = 0;
-    for (int i = 0; i < a_len; i++) {
+    int i, j;
+    for (i = 0; i < a_len; i++) {
         if (!(intset_con_internal(a_arr[i], b))) {
             temp[step] = a_arr[i];
             step = step + 1;
         }
     }
-    for (int j = 0; j < b_len; j++) {
+    for (j = 0; j < b_len; j++) {
         if (!(intset_con_internal(b_arr[i], a))) {
             temp[step] = b_arr[j];
             step = step + 1;
@@ -305,15 +306,15 @@ intset_dif(PG_FUNCTION_ARGS)
     Intset *b = (Intset *) PG_GETARG_VARLENA_P(1);
     Intset *newset;
     
-    int a_len = VARSIZE_ANY_EXHDR(a) / 4;
-    int b_len = VARSIZE_ANY_EXHDR(b) / 4;
-    int arr[a_len];
+    int len = VARSIZE_ANY_EXHDR(a) / 4;
+    int arr[len];
     memcpy(arr, a->data, VARSIZE_ANY_EXHDR(a));
     
-    max_size = a_len;
+    int max_size = len;
     int temp[max_size];
     int step = 0;
-    for (int i = 0; i < a_len; i++) {
+    int i;
+    for (i = 0; i < len; i++) {
         if (!(intset_con_internal(arr[i], b))) {
             temp[step] = arr[i];
             step = step + 1;
