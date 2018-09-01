@@ -11,6 +11,7 @@ typedef struct Intset
 } Intset;
 
 Intset *parse_set(char *str);
+int internal_cmpfunc (const void * a, const void * b);
 
 /*****************************************************************************
  * Input/Output functions
@@ -106,6 +107,7 @@ Intset *parse_set(char *str) {
             return NULL;
         }
     }
+    qsort(arr, j, sizeof(int), internal_cmpfunc);
     s = (Intset *)palloc(j*sizeof(Intset) + 4);
     SET_VARSIZE(s,(4*j) + VARHDRSZ);
     memcpy(s->data,arr,4*j);
@@ -115,6 +117,12 @@ Intset *parse_set(char *str) {
 /*****************************************************************************
  * Operators
  *****************************************************************************/
+
+
+
+int internal_cmpfunc (const void * a, const void * b) {
+   return ( *(int*)a - *(int*)b );
+}
 
 static bool
 intset_con_internal(int i, Intset * a)
