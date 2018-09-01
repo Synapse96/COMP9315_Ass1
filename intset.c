@@ -5,9 +5,9 @@ PG_MODULE_MAGIC;
 
 typedef struct Intset
 {
-	char v1_len[4];
-	char data[1];
-	int cdn; //cardinality?
+    char v1_len[4];
+    char data[1];
+    int cdn; //cardinality?
 } Intset;
 
 Intset *parse_set(char *str);
@@ -122,31 +122,27 @@ Intset *parse_set(char *str) {
  *****************************************************************************/
 
 int internal_rmv_dup(int *arr, int len) {
-
-  if(len == 0 || len == 1) {
-    return len;
-  }
-
-  int temp[len];
-  int i, j = 0;
-
-  for(i = 0; i < len - 1 ; i++) {
-    if(arr[i] != arr[i + 1]) {
-      temp[j] = arr[i];
-      j++;
+    if (len == 0 || len == 1) {
+        return len;
     }
-  }
-  temp[j] = arr[len - 1];
-  j++;
-
-  for(i = 0; i < j; i++) {
-    arr[i] = temp[i];
-  }
-  return j;
+    int temp[len];
+    int i, j = 0;
+    for(i = 0; i < len - 1 ; i++) {
+        if(arr[i] != arr[i + 1]) {
+            temp[j] = arr[i];
+            j++;
+        }
+    }
+    temp[j] = arr[len - 1];
+    j++;
+    for(i = 0; i < j; i++) {
+        arr[i] = temp[i];
+    }
+    return j;
 }
 
 int internal_cmpfunc (const void * a, const void * b) {
-   return ( *(int*)a - *(int*)b );
+    return (* (int*) a - * (int*) b);
 }
 
 static bool
@@ -175,6 +171,18 @@ intset_sub_internal(Intset * a, Intset * b)
     int i;
     for (i = 0; i < len; i++) {
         if (!(intset_con_internal(arr[i], b))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
+intset_unq_internal(int i, int arr[], int len)
+{
+    int j;
+    for (j = 0; j < len; j++) {
+        if (arr[j] == i) {
             return false;
         }
     }
@@ -287,8 +295,10 @@ intset_uni(PG_FUNCTION_ARGS)
         count = count + 1;
     }
     for (j = 0; j < b_len; j++) {
-        temp[count] = b_arr[j];
-        count = count + 1;
+        if (intset_unq_internal(b_arr[j], temp, count)) {
+            temp[count] = b_arr[j];
+            count = count + 1;
+        }
     }
     
     int newdata[count];
