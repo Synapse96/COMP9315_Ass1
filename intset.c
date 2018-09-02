@@ -121,7 +121,9 @@ Intset *parse_set(char *str) {
  * Operators
  *****************************************************************************/
 
-int internal_rmv_dup(int *arr, int len) {
+int
+internal_rmv_dup(int *arr, int len)
+{
     if (len == 0 || len == 1) {
         return len;
     }
@@ -141,7 +143,9 @@ int internal_rmv_dup(int *arr, int len) {
     return j;
 }
 
-int internal_cmpfunc (const void * a, const void * b) {
+int 
+internal_cmpfunc (const void * a, const void * b)
+{
     return (* (int*) a - * (int*) b);
 }
 
@@ -152,18 +156,11 @@ intset_con_internal(int i, Intset * a)
     int arr[len];
     memcpy(arr, a->data, VARSIZE_ANY_EXHDR(a));
     
-    int k = 0;
-    int j = len - 1;
-    int mid = (i + j)/2;
-    while(k <= j) {
-    	if(arr[k] == i) {
-    		return true;
-    	} else if(i > arr[k]) {
-    		k = mid + 1;
-    	} else {
-    		j = mid - 1;
-    	}
-    	mid = (i + j)/2;
+    int j;
+    for (j = 0; j < len; j++) {
+        if (arr[j] == i) {
+            return true;
+        }
     }
     return false;
 }
@@ -178,18 +175,6 @@ intset_sub_internal(Intset * a, Intset * b)
     int i;
     for (i = 0; i < len; i++) {
         if (!(intset_con_internal(arr[i], b))) {
-            return false;
-        }
-    }
-    return true;
-}
-
-static bool
-intset_unq_internal(int i, int arr[], int len)
-{
-    int j;
-    for (j = 0; j < len; j++) {
-        if (arr[j] == i) {
             return false;
         }
     }
@@ -296,22 +281,38 @@ intset_uni(PG_FUNCTION_ARGS)
     int max_size = a_len + b_len;
     int temp[max_size];
     int count = 0;
-    int i, j;
-    for (i = 0; i < a_len; i++) {
-        temp[count] = a_arr[i];
-        count = count + 1;
-    }
-    for (j = 0; j < b_len; j++) {
-        if (intset_unq_internal(b_arr[j], temp, count)) {
-            temp[count] = b_arr[j];
+    int i;
+    int j, k = 0;
+    for (i = 0; i < a_len + b_len; i++) {
+        if (j < a_len && k < b_len) {
+            if (a_arr[j] < b_arr[k]) {
+                temp[count] = a_arr[j];
+                j = j + 1;
+            } else {
+                temp[count] = b_arr[k];
+                k = k + 1;
+            }
             count = count + 1;
+        } else if (j == a_len) {
+            for (; k < b_len; k++) {
+                temp[count] = b_arr[k];
+                count = count + 1;
+            }
+            break;
+        } else {
+            for (; j < a_len; j++) {
+                temp[count] = a_arr[j];
+                count = count + 1;
+            }
+            break;
         }
     }
+    count = internal_rmv_dup(temp, count);
     
     int newdata[count];
-    int k;
-    for (k = 0; k < count; k++) {
-        newdata[k] = temp[k];
+    int l;
+    for (l = 0; l < count; l++) {
+        newdata[l] = temp[l];
     }
     
     newset = (Intset *) palloc(count * sizeof(Intset) + 4);
@@ -339,24 +340,56 @@ intset_dis(PG_FUNCTION_ARGS)
     int max_size = a_len + b_len;
     int temp[max_size];
     int count = 0;
-    int i, j;
-    for (i = 0; i < a_len; i++) {
-        if (!(intset_con_internal(a_arr[i], b))) {
-            temp[count] = a_arr[i];
-            count = count + 1;
-        }
-    }
-    for (j = 0; j < b_len; j++) {
-        if (!(intset_con_internal(b_arr[i], a))) {
-            temp[count] = b_arr[j];
-            count = count + 1;
+    int i;    
+    int j, k = 0;
+    for (i = 0; i < a_len + b_len; i++) {
+        if (j < a_len && k < b_len) {
+            bool a_add = (!(intset_con_internal(a_arr[j], b)));
+            bool b_add = (!(intset_con_internal(b_arr[k], a)));
+            if (a_add && b_add) {
+                if (a_arr[j] < b_arr[k]) {
+                    temp[count] = a_arr[j];
+                    j = j + 1;
+                } else {
+                    temp[count] = b_arr[k];
+                    k = k + 1;
+                }
+                count = count + 1;
+            } else if (a_add) {
+                temp[count] = a_arr[j];
+                count = count + 1;
+                j = j + 1;
+            } else if (b_add) {
+                temp[count] = b_arr[k];
+                count = count + 1;
+                k = k + 1;
+            } else {
+                j = j + 1;
+                k = k + 1;
+            }
+        } else if (j == a_len) {
+            for (; k < b_len; k++) {
+                if (!(intset_con_internal(b_arr[k], a))) {
+                    temp[count] = b_arr[k];
+                    count = count + 1;
+                }
+            }
+            break;
+        } else {
+            for (; j < a_len; j++) {
+                if (!(intset_con_internal(a_arr[j], b))) {
+                    temp[count] = a_arr[j];
+                    count = count + 1;
+                }
+            }
+            break;
         }
     }
     
     int newdata[count];
-    int k;
-    for (k = 0; k < count; k++) {
-        newdata[k] = temp[k];
+    int l;
+    for (l = 0; l < count; l++) {
+        newdata[l] = temp[l];
     }
     
     newset = (Intset *) palloc(count * sizeof(Intset) + 4);
