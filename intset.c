@@ -7,11 +7,10 @@ typedef struct Intset
 {
     char v1_len[4];
     char data[1];
-    int cdn; //cardinality?
 } Intset;
 
 Intset *parse_set(char *str);
-int internal_cmpfunc (const void * a, const void * b);
+int internal_cmp_func (const void * a, const void * b);
 int internal_rmv_dup(int *arr, int len);
 
 /*****************************************************************************
@@ -45,24 +44,24 @@ intset_out(PG_FUNCTION_ARGS)
     }
     int arr[len];
     int i;
-    memcpy(arr,s->data,VARSIZE_ANY_EXHDR(s));
-    char *result =  (char *)palloc(VARSIZE(s));
+    memcpy(arr,s->data, VARSIZE_ANY_EXHDR(s));
+    char *result = (char *) palloc(VARSIZE(s));
     if (len == 1) {
-        sprintf(result,"{%d}",arr[0]);
+        sprintf(result, "{%d}", arr[0]);
         PG_RETURN_CSTRING(result);
     } else {
-        sprintf(result,"{%d,",arr[0]);
+        sprintf(result, "{%d,", arr[0]);
     }
-    char *temp =  (char *)palloc(40);
-    for(i = 1; i < len - 1; i++) {
-        sprintf(temp,"%d,",arr[i]);
-        strcat(result,temp);
+    char *temp =  (char *) palloc(40);
+    for (i = 1; i < len - 1; i++) {
+        sprintf(temp, "%d,", arr[i]);
+        strcat(result, temp);
     }
-    sprintf(temp,"%d}",arr[i]);
-    strcat(result,temp);
+    
+    sprintf(temp, "%d}", arr[i]);
+    strcat(result, temp);
     PG_RETURN_CSTRING(result);
 }
-
 
 Intset *parse_set(char *str) {
     int arr[strlen(str)];
@@ -108,12 +107,12 @@ Intset *parse_set(char *str) {
             return NULL;
         }
     }
-    qsort(arr, j, sizeof(int), internal_cmpfunc);
-    j = internal_rmv_dup(arr,j);
+    qsort(arr, j, sizeof(int), internal_cmp_func);
+    j = internal_rmv_dup(arr, j);
     
-    s = (Intset *)palloc(j*sizeof(Intset) + 4);
-    SET_VARSIZE(s,(4*j) + VARHDRSZ);
-    memcpy(s->data,arr,4*j);
+    s = (Intset *) palloc(j * sizeof(Intset) + 4);
+    SET_VARSIZE(s,(4 * j) + VARHDRSZ);
+    memcpy(s->data, arr, 4 * j);
     return s;
 }
 
@@ -129,7 +128,7 @@ internal_rmv_dup(int *arr, int len)
     }
     int temp[len];
     int i, j = 0;
-    for(i = 0; i < len - 1 ; i++) {
+    for (i = 0; i < len - 1; i++) {
         if(arr[i] != arr[i + 1]) {
             temp[j] = arr[i];
             j++;
@@ -137,14 +136,14 @@ internal_rmv_dup(int *arr, int len)
     }
     temp[j] = arr[len - 1];
     j++;
-    for(i = 0; i < j; i++) {
+    for (i = 0; i < j; i++) {
         arr[i] = temp[i];
     }
     return j;
 }
 
 int 
-internal_cmpfunc (const void * a, const void * b)
+internal_cmp_func (const void * a, const void * b)
 {
     return (* (int*) a - * (int*) b);
 }
@@ -156,11 +155,18 @@ intset_con_internal(int i, Intset * a)
     int arr[len];
     memcpy(arr, a->data, VARSIZE_ANY_EXHDR(a));
     
-    int j;
-    for (j = 0; j < len; j++) {
-        if (arr[j] == i) {
-            return true;
+    int k = 0;
+    int j = len - 1;
+    int mid = (i + j)/2;
+    while (k <= j) {
+        if (arr[k] == i) {
+        	return true;
+        } else if (i > arr[k]) {
+            k = mid + 1;
+        } else {
+            j = mid - 1;
         }
+        mid = (i + j) / 2;
     }
     return false;
 }
@@ -280,7 +286,6 @@ intset_uni(PG_FUNCTION_ARGS)
     
     int max_size = a_len + b_len;
     int temp[max_size];
-    int count = 0;
     int i;
     int j, k = 0;
     for (i = 0; i < a_len + b_len; i++) {
@@ -292,32 +297,31 @@ intset_uni(PG_FUNCTION_ARGS)
                 temp[count] = b_arr[k];
                 k = k + 1;
             }
-            count = count + 1;
         } else if (j == a_len) {
             for (; k < b_len; k++) {
                 temp[count] = b_arr[k];
-                count = count + 1;
+                i = i + 1;
             }
             break;
         } else {
             for (; j < a_len; j++) {
                 temp[count] = a_arr[j];
-                count = count + 1;
+                i = i + 1;
             }
             break;
         }
     }
-    count = internal_rmv_dup(temp, count);
+    i = internal_rmv_dup(temp, i);
     
-    int newdata[count];
+    int newdata[i];
     int l;
     for (l = 0; l < count; l++) {
         newdata[l] = temp[l];
     }
     
-    newset = (Intset *) palloc(count * sizeof(Intset) + 4);
-    SET_VARSIZE(newset, (4 * count) + VARHDRSZ);
-    memcpy(newset->data, newdata, count * 4);
+    newset = (Intset *) palloc(i * sizeof(Intset) + 4);
+    SET_VARSIZE(newset, (4 * i) + VARHDRSZ);
+    memcpy(newset->data, newdata, i * 4);
     PG_RETURN_POINTER(newset);
 }
 
