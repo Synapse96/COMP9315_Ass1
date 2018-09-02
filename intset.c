@@ -152,11 +152,18 @@ intset_con_internal(int i, Intset * a)
     int arr[len];
     memcpy(arr, a->data, VARSIZE_ANY_EXHDR(a));
     
-    int j;
-    for (j = 0; j < len; j++) {
-        if (arr[j] == i) {
-            return true;
-        }
+    int k = 0;
+    int j = len - 1;
+    int mid = (i + j)/2;
+    while(k <= j) {
+    	if(arr[k] == i) {
+    		return true;
+    	} else if(i > arr[k]) {
+    		k = mid + 1;
+    	} else {
+    		j = mid - 1;
+    	}
+    	mid = (i + j)/2;
     }
     return false;
 }
