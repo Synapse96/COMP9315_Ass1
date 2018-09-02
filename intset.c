@@ -155,18 +155,17 @@ intset_con_internal(int i, Intset * a)
     int arr[len];
     memcpy(arr, a->data, VARSIZE_ANY_EXHDR(a));
     
-    int k = 0;
-    int j = len - 1;
-    int mid = (i + j)/2;
-    while (k <= j) {
-        if (arr[k] == i) {
+    int j = 0;
+    int k = len - 1;
+    while (j <= k) {
+        int mid = j + (k - j) / 2;
+        if (arr[mid] == i) {
         	return true;
-        } else if (i > arr[k]) {
-            k = mid + 1;
+        } else if (arr[mid] < i) {
+            j = mid + 1;
         } else {
-            j = mid - 1;
+            k = mid - 1;
         }
-        mid = (i + j) / 2;
     }
     return false;
 }
@@ -291,21 +290,21 @@ intset_uni(PG_FUNCTION_ARGS)
     for (i = 0; i < a_len + b_len; i++) {
         if (j < a_len && k < b_len) {
             if (a_arr[j] < b_arr[k]) {
-                temp[count] = a_arr[j];
+                temp[i] = a_arr[j];
                 j = j + 1;
             } else {
-                temp[count] = b_arr[k];
+                temp[i] = b_arr[k];
                 k = k + 1;
             }
         } else if (j == a_len) {
             for (; k < b_len; k++) {
-                temp[count] = b_arr[k];
+                temp[i] = b_arr[k];
                 i = i + 1;
             }
             break;
         } else {
             for (; j < a_len; j++) {
-                temp[count] = a_arr[j];
+                temp[i] = a_arr[j];
                 i = i + 1;
             }
             break;
@@ -315,7 +314,7 @@ intset_uni(PG_FUNCTION_ARGS)
     
     int newdata[i];
     int l;
-    for (l = 0; l < count; l++) {
+    for (l = 0; l < i; l++) {
         newdata[l] = temp[l];
     }
     

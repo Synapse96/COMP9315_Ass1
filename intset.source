@@ -39,8 +39,7 @@ CREATE FUNCTION intset_dif(intset, intset) RETURNS intset
 CREATE OPERATOR <@ (
    leftarg    = integer,
    rightarg   = intset,
-   procedure  = intset_con,
-   commutator = <@
+   procedure  = intset_con
 );
 
 CREATE OPERATOR @ (
@@ -51,8 +50,7 @@ CREATE OPERATOR @ (
 CREATE OPERATOR @> (
    leftarg    = intset,
    rightarg   = intset,
-   procedure  = intset_sub,
-   commutator = @>
+   procedure  = intset_sub
 );
 
 CREATE OPERATOR = (
@@ -86,6 +84,5 @@ CREATE OPERATOR !! (
 CREATE OPERATOR - (
    leftarg    = intset,
    rightarg   = intset,
-   procedure  = intset_dif,
-   commutator = -
+   procedure  = intset_dif
 );
